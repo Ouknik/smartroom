@@ -1,0 +1,10 @@
+# Ignore the nested legacy project folder — Vercel should only build the root
+smartroom-frontend/
+
+# Build artifacts (Vercel rebuilds these)
+.next/
+out/
+build/
+
+# Dev dependencies cache
+.npm/
