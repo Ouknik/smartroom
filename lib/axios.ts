@@ -1,7 +1,18 @@
 import axios from 'axios'
 
+// ─── Why /backend and not the full URL? ──────────────────────────────────────
+// Vercel serves over HTTPS. Calling http://backend.seedalotour.shop directly
+// from the browser triggers a "mixed content" block + CORS errors.
+//
+// Instead we use Next.js rewrites (next.config.ts):
+//   browser → /backend/* (same-origin, HTTPS, no CORS)
+//   Next.js server → http://backend.seedalotour.shop/api/* (server-to-server, fine)
+//
+// This works on both Vercel (production) and local dev (next dev handles rewrites too).
+// ─────────────────────────────────────────────────────────────────────────────
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://backend.seedalotour.shop/api',
+  baseURL: '/backend',
   headers: { 'Content-Type': 'application/json' },
 })
 
