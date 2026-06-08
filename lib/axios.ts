@@ -1,19 +1,34 @@
 import axios from 'axios'
 
-// ─── Why /backend and not the full URL? ──────────────────────────────────────
-// Vercel serves over HTTPS. Calling http://backend.seedalotour.shop directly
-// from the browser triggers a "mixed content" block + CORS errors.
-//
-// Instead we use Next.js rewrites (next.config.ts):
-//   browser → /backend/* (same-origin, HTTPS, no CORS)
-//   Next.js server → http://backend.seedalotour.shop/api/* (server-to-server, fine)
-//
-// This works on both Vercel (production) and local dev (next dev handles rewrites too).
-// ─────────────────────────────────────────────────────────────────────────────
+// All API calls go to /backend/* (same-origin, HTTPS safe).
+// Next.js rewrites /backend/* → http://backend.seedalotour.shop/api/* server-side.
 
 const api = axios.create({
   baseURL: '/backend',
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  },
+  // ─── Fix for Laravel backend bug ─────────────────────────────────────────
+  // The backend prepends a PHP comment to every response, e.g.:
+  //   // routes/api.php
+  //   {"token":"...","user":{...}}
+  //
+  // This makes the body invalid JSON. We strip the comment before parsing.
+  // ─────────────────────────────────────────────────────────────────────────
+  transformResponse: [(data) => {
+    if (typeof data !== 'string') return data
+    // Remove any leading // comment lines (handles single or multiple lines)
+    const cleaned = data.replace(/^(\/\/[^\n]*\n?)+/, '').trim()
+    if (!cleaned) return data
+    try {
+      return JSON.parse(cleaned)
+    } catch {
+      // Not JSON — return as-is (HTML error pages, etc.)
+      return cleaned
+    }
+  }],
 })
 
 // Attach Bearer token on every request (client-side only)
